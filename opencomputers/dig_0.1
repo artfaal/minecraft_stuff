@@ -1,0 +1,122 @@
+local maxX, maxY = 1, 2
+local t = turtle
+local seed = 'minecraft:wheat_seeds'
+local seed_result = 'minecraft:wheat'
+local age_ready = 7
+t.refuel()
+function find_in_stash_seeds(...)
+    for i=1, 16 do
+        if t.getItemDetail(i) then
+            if t.getItemDetail(i).name == seed then
+                t.select(i)
+                break
+            end
+        end
+    end
+end
+
+function sbor(...)
+    -- Забирает и ставить под собой
+    local success, data = t.inspectDown()
+    if success then
+        if data.name == seed_result and data.metadata == age_ready then
+            t.digDown()
+            find_in_stash_seeds()
+            t.placeDown()
+        end
+    end
+end
+
+function posev(...)
+    t.down()
+    local success, data = t.inspectDown()
+    if success then
+        if data.name == 'minecraft:grass' then
+            -- Он не может удобрять блок прямо под собой.
+            t.back()
+            t.dig()
+            find_in_stash_seeds()
+            t.up()
+            t.forward()
+            t.placeDown()
+        end
+    end
+end
+
+function walk(...)
+    local x, y = 0, 0
+    local look = 'f'
+    while true do
+        -- Создание ложного события для обхода ограничения циклов.
+        os.queueEvent("fakeEvent")
+        os.pullEvent()
+
+        -- Если достигли последнего ряда поля (в случае четной X)
+        if look == 'f' and y == maxY and x == maxX then
+            print('coord: '..x..','..y)
+            t.turnLeft()
+            for i=1, maxX do t.forward() end
+            t.turnLeft()
+            for i=1, maxY do t.forward() end
+            x, y = 0, 0
+            t.turnLeft()
+            t.turnLeft()
+            print('coord: '..x..','..y)
+            break
+        -- Если достигли последнего ряда поля (в случае нечетной X)
+        elseif look == 'b' and y == 0 and x == maxX then
+            print('coord: '..x..','..y)
+            t.turnRight()
+            for i=1, maxX do t.forward() end
+            x, y = 0, 0
+            t.turnRight()
+            break
+
+        -- Просто движение
+        elseif look == 'f' and y ~= maxY then
+            t.forward()
+            y = y+1
+            print('coord: '..x..','..y)
+            -- sleep(1)
+        -- Достигли дальнего края Y
+        elseif look == 'f' and y ==maxY then
+            t.turnRight()
+            t.forward()
+            x = x+1
+            print('coord: '..x..','..y)
+            -- sleep(1)
+            t.turnRight()
+            look = 'b'
+            t.forward()
+            y = y-1
+            print('coord: '..x..','..y)
+            -- sleep(1)
+        -- Обратное движение
+        elseif look == 'b' and y ~= 0 then
+            t.forward()
+            y = y-1
+            print('coord: '..x..','..y)
+            -- sleep(1)
+        -- Достигли начального края Y
+        elseif look =='b' and y == 0 then
+            t.turnLeft()
+            t.forward()
+            x = x + 1
+            print('coord: '..x..','..y)
+            -- sleep(1)
+            t.turnLeft()
+            look = 'f'
+            t.forward()
+            y = y+1
+            print('coord: '..x..','..y)
+            -- sleep(1)
+        else
+            print('Error with path. Program will stop.')
+            break
+        end
+    end
+end
+
+walk()
+-- find_in_stash_seeds()
+-- posev()
